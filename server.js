@@ -8,7 +8,7 @@ const message = []
 console.log("********messages*****",message)
 
 const openai = new OpenAI({
-  apiKey: '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'
+  apiKey: ''
 });
 
 async function main(input) {
