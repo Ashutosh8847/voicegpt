@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice GPT</title>
+  <style>
+    .container {
+      min-height: 30vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 61px auto;
+      background-color: antiquewhite;
+      border-radius: 12px;
+      margin-top: -49px;
+
+    }
+
+    .chats {
+      align-items: flex-start;
+      flex-direction: column;
+
+    }
+
+    #response {
+      margin-bottom: 100px;
+      margin-left: 38%;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+  }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">GPT-3.5-turbo</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/">Link</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <form class="d-flex" role="search" style="width: 50%; margin-left:27%;padding-top:3%">
+    <input class="form-control me-2" id="testinput" placeholder="Search" aria-label="Search">
+    <button class="btn btn-outline-success" id="inputbutton">Search</button>
+  </form>
+  <i id="microphone" style="font-size: 30px; margin-left: 49.3%; margin-top:80px; position:relative"
+    class="fa-solid fa-microphone"></i>
+  <div class="container" style="width: 34%;">
+    <!-- <i  id = "microphone"  class="fa-solid fa-microphone"></i> -->
+    <button type="button" id="start" class="btn btn-success">start</button>
+    <button style="margin-left: 10px;" id="stop" "button" class="btn btn-danger">stop</button>
+  </div>
+  <div class="container chats" style="width: 100%;">
+    <h3 id="response">Respone will appear here</h3>
+  </div>
+
+
+
+  <script>
+
+    async function postData(url = "", data = {}) {
+      const response = await fetch(url, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        redirect: "follow",
+        referrerPolicy: "no-referrer",
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    }
+
+    const populatewithgpt = (input) => {
+      postData("/api", { input: input }).then((data) => {
+        console.log("Server response:", data);
+        console.log("*****ai answer*****", data.message);
+
+        const escapedInput = escapeHtml(input);
+        const escapedCode = escapeHtml(data.message);
+        console.log("*******escapedCode****",escapedCode)
+
+        document.querySelector(".chats").innerHTML += `
+            <div class="code-block">
+                <b>Question</b>: ${escapedInput}<br>
+                <b>Answer</b>: <pre>${escapedCode}</pre>
+            </div>`;
+      });
+    }
+    // Function to escape HTML characters
+    function escapeHtml(html) {
+      var text = document.createTextNode(html);
+      var div = document.createElement('div');
+      div.appendChild(text);
+      return div.innerHTML;
+    }
+
+    let speech = true;
+    let globalTranscript;
+    window.SpeechRecognition = window.SpeechRecognition
+      || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.interimResults = true;
+    recognition.addEventListener('result', e => {
+      const transcript = Array.from(e.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('')
+      globalTranscript = transcript
+      console.log("****gb transcript***", globalTranscript)
+
+    });
+
+    start.addEventListener("click", () => {
+      if (speech == true) {
+        recognition.start();
+        recognition.addEventListener('end', () => {
+          recognition.stop()
+          console.log("***recognization in end ***")
+          if (globalTranscript !== "") {
+            console.log("*****globalTranscript****", globalTranscript)
+            populatewithgpt(globalTranscript)
+
+          } globalTranscript = ""
+        });
+      }
+    })
+
+    document.getElementById('inputbutton').addEventListener('click', (e) => {
+      e.preventDefault(); 
+      const inputElement = document.getElementById('testinput');
+      const input = inputElement.value;
+      console.log("*****input*****",input)
+      if(input){
+        const escapedInput = escapeHtml(input);
+      console.log("*****escapedinput****",escapedInput)
+      inputElement.value = '';
+      populatewithgpt(escapedInput);
+      }else {
+        console.log("Input is undefined or empty. Not processing.");
+      }    
+    });
+   
+    microphone.addEventListener("click", () => {
+      console.log("*****microphone clicked******")
+      if (speech == true) {
+        recognition.start();
+        recognition.addEventListener('end', () => {
+          recognition.stop()
+          console.log("***recognization in end ***")
+          if (globalTranscript !== "") {
+            console.log("*****globalTranscript****", globalTranscript)
+            populatewithgpt(globalTranscript)
+          } globalTranscript = ""
+        });
+      }
+    })
+  </script>
+</body>
+
+</html>
